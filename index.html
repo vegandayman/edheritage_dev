@@ -346,8 +346,10 @@ if (!query) {
  return;
  }
 
- const nameInput = document.getElementById('searchInput').value.trim().toLowerCase();
- const oracleInput = document.getElementById('oracleInput').value.trim().toLowerCase();
+ const rawNameInput = document.getElementById('searchInput').value.trim();
+ const nameInput = rawNameInput.toLowerCase();
+ const rawOracleInput = document.getElementById('oracleInput').value.trim();
+ const oracleInput = rawOracleInput.toLowerCase();
 
  const matches = heritageDatabase.filter(card => {
  let matchesFlavor = false;
@@ -374,10 +376,27 @@ if (!query) {
  return;
  }
 
+ // Construct Scryfall URL
+ const baseHeritageQuery = 'f:commander (in:core OR in:expansion) -is:ub -o:"your commander"';
+ let scryfallQueryParts = [baseHeritageQuery];
+
+ if (rawNameInput) scryfallQueryParts.push(`"${rawNameInput}"`);
+ selectedTypeTags.forEach(tag => scryfallQueryParts.push(`t:"${tag}"`));
+ if (rawOracleInput) scryfallQueryParts.push(`o:"${rawOracleInput}"`);
+
+ const finalQuery = scryfallQueryParts.join(' ');
+ const scryfallUrl = `https://scryfall.com/search?q=${encodeURIComponent(finalQuery)}`;
+
  const displayLimit = 50;
- let html = `<p class="legal">Found ${matches.length} matching entry/entries. ${matches.length > displayLimit ? `Displaying first ${displayLimit}.` : ''}</p><div class="gallery">`;
  
-matches.slice(0, displayLimit).forEach(card => {
+ let html = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">`;
+ html += `<p class="legal" style="margin: 0;">Found ${matches.length} matching entry/entries. ${matches.length > displayLimit ? `Displaying first ${displayLimit}.` : ''}</p>`;
+ html += `<a href="${scryfallUrl}" target="_blank" rel="noopener noreferrer" class="scryfall-btn" style="margin-bottom: 0;">Open these results in Scryfall</a>`;
+ html += `</div>`;
+ 
+ html += `<div class="gallery">`;
+ 
+ matches.slice(0, displayLimit).forEach(card => {
  if (card.i) {
  html += `<a href="${card.u}" target="_blank"><img src="${card.i}" class="card-image" alt="${card.n}"></a>`;
  } else {
@@ -387,7 +406,7 @@ matches.slice(0, displayLimit).forEach(card => {
  });
  html += '</div>';
  
-resultsDiv.innerHTML = html;
+ resultsDiv.innerHTML = html;
  }
 
  function checkDeck() {
