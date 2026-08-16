@@ -54,6 +54,23 @@ border-radius: 4px;
  font-weight: bold;
  }
  button:hover { background: #005f9e; }
+  .scryfall-btn {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 1rem;
+  background: #333;
+  color: #e0e0e0;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  border: 1px solid #555;
+  transition: background 0.2s, color 0.2s;
+}
+.scryfall-btn:hover {
+  background: #444;
+  color: #ffffff;
+}
  .load-btn {
  display: block;
  width: 100%;
@@ -159,11 +176,14 @@ border: 1px solid #444;
  </style>
 </head>
 <body>
- <h1>Heritage Format Tools</h1>
+  <h1>Heritage Format Tools</h1>
 
- <button id="loadDbBtn" class="load-btn" onclick="loadDatabase()">LOAD DATABASE</button>
- <div id="dbStatus" style="margin-bottom: 2rem; text-align: center; font-weight: bold;"></div>
+  <a href="https://scryfall.com/search?q=f%3Acommander+%28in%3Acore+OR+in%3Aexpansion%29+-is%3Aub+-o%3A%22your+commander%22" target="_blank" rel="noopener noreferrer" class="scryfall-btn">
+    View Full Heritage Search on Scryfall
+  </a>
 
+  <button id="loadDbBtn" class="load-btn" onclick="loadDatabase()">LOAD DATABASE</button>
+  <div id="dbStatus" style="margin-bottom: 2rem; text-align: center; font-weight: bold;"></div>
  <section>
  <h2>1. Search Database</h2>
  <div class="search-controls">
