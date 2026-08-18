@@ -3,46 +3,63 @@ const fs = require('fs');
 const DELAY_MS = 600;
 
 async function fetchAllCards() {
-    // 1. Fetch base legal cards (unique=cards, strictly blocking UB)
-    const baseQuery = 'f:commander (in:core OR in:expansion) -is:ub -o:"your commander"';
-    console.log('Fetching base Heritage legal cards...');
-    const baseCards = await fetchQuery(baseQuery, 'cards');
+  // 1. Fetch base legal cards (unique=cards, strictly blocking UB)
+  // ADDED (game:paper) to prevent digital-only in-universe reskins from pulling in their UB oracle identities
+  const baseQuery = 'f:commander (in:core OR in:expansion) -is:ub -o:"your commander" (game:paper)';
+  console.log('Fetching base Heritage legal cards...');
+  const baseCards = await fetchQuery(baseQuery, 'cards');
 
-    // 2. Fetch flavor cards (unique=prints to expose flavor_name)
-    // We DROP -is:ub here so we can catch Universes Beyond reskins of legal premier cards.
-    const flavorQuery = 'f:commander (in:core OR in:expansion) has:flavor_name';
-    console.log('Fetching promotional reskins and flavor-name variants...');
-    const flavorCards = await fetchQuery(flavorQuery, 'prints');
+  // 2. Fetch flavor cards (unique=prints to expose flavor_name)
+  const flavorQuery = 'f:commander (in:core OR in:expansion) has:flavor_name';
+  console.log('Fetching promotional reskins and flavor-name variants...');
+  const flavorCards = await fetchQuery(flavorQuery, 'prints');
 
-    const cardMap = new Map();
+  // 3. Fetch Through the Omenpaths reskins specifically
+  const omenpathsQuery = 'f:commander set:om1';
+  console.log('Fetching Through the Omenpaths reskins...');
+  const omenpathsCards = await fetchQuery(omenpathsQuery, 'prints');
 
-    // Add base cards
-    baseCards.forEach(card => {
-        card.f = []; // Initialize an array to hold multiple possible reskin names
-        cardMap.set(card.n, card);
-    });
+  const cardMap = new Map();
 
-    // Merge flavor cards safely onto existing legal cards
-    flavorCards.forEach(card => {
-        // If the card has a flavor name AND the base card passed our strict Heritage filters in query 1
-        if (card.f && cardMap.has(card.n)) {
-            const existing = cardMap.get(card.n);
-            // Push the flavor name if we haven't already saved it
-            if (!existing.f.includes(card.f)) {
-                existing.f.push(card.f);
-            }
-        }
-    });
+  // Add base cards
+  baseCards.forEach(card => {
+    card.f = []; 
+    cardMap.set(card.n, card);
+  });
 
-    const finalCardsArray = Array.from(cardMap.values());
+  // Merge flavor cards safely onto existing legal cards
+  flavorCards.forEach(card => {
+    if (card.f && cardMap.has(card.n)) {
+      const existing = cardMap.get(card.n);
+      if (!existing.f.includes(card.f)) {
+        existing.f.push(card.f);
+      }
+    }
+  });
 
-    const outputData = {
-        lastUpdated: new Date().toISOString(),
-        cards: finalCardsArray
-    };
+  // Inject Omenpaths cards, inverted to hide the UB name
+  omenpathsCards.forEach(card => {
+    if (card.f) {
+      cardMap.set(card.f, {
+        n: card.f, // Set the Omenpaths name as the primary legal name
+        f: [],     // Do NOT include the UB Oracle name here
+        t: card.t,
+        o: card.o,
+        u: card.u,
+        i: card.i
+      });
+    }
+  });
 
-    fs.writeFileSync('heritage_cards.json', JSON.stringify(outputData));
-    console.log(`Extraction complete. Successfully wrote ${finalCardsArray.length} total entries to heritage_cards.json`);
+  const finalCardsArray = Array.from(cardMap.values());
+
+  const outputData = {
+    lastUpdated: new Date().toISOString(),
+    cards: finalCardsArray
+  };
+
+  fs.writeFileSync('heritage_cards.json', JSON.stringify(outputData));
+  console.log(`Extraction complete. Successfully wrote ${finalCardsArray.length} total entries to heritage_cards.json`);
 }
 
 async function fetchQuery(queryString, uniqueType) {
