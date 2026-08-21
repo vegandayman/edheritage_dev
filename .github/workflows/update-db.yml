@@ -23,8 +23,8 @@ jobs:
 
       - name: Commit and push changes
         run: |
-        git config --global user.name 'github-actions[bot]'
-        git config --global user.email 'github-actions[bot]@users.noreply.github.net'
-        git add heritage_cards.json build-log.json
-        git commit -m "Automated update of database and build log" || echo "No changes to commit"
-        git push
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.net'
+          git add heritage_cards.json build-log.json
+          git commit -m "Automated update of database and build log" || echo "No changes to commit"
+          git push
