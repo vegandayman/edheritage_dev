@@ -1,31 +1,59 @@
 const fs = require('fs');
 
-// Load both JSON database snapshots
-const file25 = JSON.parse(fs.readFileSync('heritage_cards_25.json', 'utf8'));
-const file26 = JSON.parse(fs.readFileSync('heritage_cards_26.json', 'utf8'));
+try {
+    console.log('Scanning workspace directory for files...');
+    const files = fs.readdirSync('.');
+    console.log('Available files:', files);
 
-// Map card names into Sets for fast lookups
-const set25 = new Map(file25.map(card => [card.name, card]));
-const set26 = new Map(file26.map(card => [card.name, card]));
+    const file25Path = 'heritage_cards_25.json';
+    const file26Path = 'heritage_cards_26.json';
 
-// Find cards present on the 25th but missing on the 26th
-const removed = [];
-for (const [name, card] of set25) {
-    if (!set26.has(name)) {
-        removed.push(card);
+    // Verify files exist before attempting to read
+    if (!fs.existsSync(file25Path) || !fs.existsSync(file26Path)) {
+        console.error(`\n[ERROR] Missing database snapshot files. Expected '${file25Path}' and '${file26Path}' in the repository root.`);
+        process.exit(1);
     }
-}
 
-// Find cards present on the 26th that weren't there on the 25th
-const added = [];
-for (const [name, card] of set26) {
-    if (!set25.has(name)) {
-        added.push(card);
+    console.log(`\nLoading ${file25Path}...`);
+    const file25 = JSON.parse(fs.readFileSync(file25Path, 'utf8'));
+
+    console.log(`Loading ${file26Path}...`);
+    const file26 = JSON.parse(fs.readFileSync(file26Path, 'utf8'));
+
+    console.log(`Comparing datasets (${file25.length} cards vs ${file26.length} cards)...\n`);
+
+    const set25 = new Map(file25.map(card => [card.name, card]));
+    const set26 = new Map(file26.map(card => [card.name, card]));
+
+    const removed = [];
+    for (const [name, card] of set25) {
+        if (!set26.has(name)) {
+            removed.push(card);
+        }
     }
+
+    const added = [];
+    for (const [name, card] of set26) {
+        if (!set25.has(name)) {
+            added.push(card);
+        }
+    }
+
+    console.log('--- REMOVED CARDS ---');
+    if (removed.length > 0) {
+        removed.forEach(c => console.log(`- ${c.name} (Set: ${c.set}, Number: ${c.collector_number})`));
+    } else {
+        console.log('None');
+    }
+
+    console.log('\n--- ADDED CARDS ---');
+    if (added.length > 0) {
+        added.forEach(c => console.log(`+ ${c.name} (Set: ${c.set}, Number: ${c.collector_number})`));
+    } else {
+        console.log('None');
+    }
+
+} catch (err) {
+    console.error('\n[FATAL ERROR] An exception occurred during execution:', err.message);
+    process.exit(1);
 }
-
-console.log('--- REMOVED CARDS ---');
-console.log(removed.length > 0 ? removed.map(c => `${c.name} (Set: ${c.set}, Number: ${c.collector_number})`) : 'None');
-
-console.log('\n--- ADDED CARDS ---');
-console.log(added.length > 0 ? added.map(c => `${c.name} (Set: ${c.set}, Number: ${c.collector_number})`) : 'None');
