@@ -4,72 +4,60 @@ try {
     const file25Path = 'heritage_cards_25.json';
     const file26Path = 'heritage_cards_26.json';
 
-    if (!fs.existsSync(file25Path) || !fs.existsSync(file26Path)) {
-        console.error(`[ERROR] Missing files: '${file25Path}' or '${file26Path}'.`);
-        process.exit(1);
-    }
-
     let raw25 = JSON.parse(fs.readFileSync(file25Path, 'utf8'));
     let raw26 = JSON.parse(fs.readFileSync(file26Path, 'utf8'));
 
-    // Helper to resolve array from various JSON structures
-    function extractArray(data, filename) {
+    function extractArray(data) {
         if (Array.isArray(data)) return data;
         if (data && typeof data === 'object') {
-            // Check common wrapper keys
             for (const key of ['data', 'cards', 'results', 'items']) {
                 if (Array.isArray(data[key])) return data[key];
             }
-            // If it's an object containing arrays, find the first array property
             for (const key of Object.keys(data)) {
                 if (Array.isArray(data[key])) return data[key];
             }
         }
-        console.error(`[ERROR] Could not extract a card array from ${filename}. Root type: ${typeof data}`);
         return null;
     }
 
-    const array25 = extractArray(raw25, file25Path);
-    const array26 = extractArray(raw26, file26Path);
+    const array25 = extractArray(raw25);
+    const array26 = extractArray(raw26);
 
-    if (!array25 || !array26) {
-        process.exit(1);
-    }
+    console.log(`Analyzing datasets by Scryfall ID: (${array25.length} cards vs ${array26.length} cards)...\n`);
 
-    console.log(`Comparing datasets (${array25.length} cards vs ${array26.length} cards)...\n`);
-
-    const set25 = new Map(array25.map(card => [card.name, card]));
-    const set26 = new Map(array26.map(card => [card.name, card]));
+    // Map by Scryfall's unique card ID instead of name
+    const map25 = new Map(array25.map(card => [card.id || card.name, card]));
+    const map26 = new Map(array26.map(card => [card.id || card.name, card]));
 
     const removed = [];
-    for (const [name, card] of set25) {
-        if (!set26.has(name)) {
+    for (const [id, card] of map25) {
+        if (!map26.has(id)) {
             removed.push(card);
         }
     }
 
     const added = [];
-    for (const [name, card] of set26) {
-        if (!set25.has(name)) {
+    for (const [id, card] of map26) {
+        if (!map25.has(id)) {
             added.push(card);
         }
     }
 
-    console.log('--- REMOVED CARDS ---');
+    console.log('--- EXACT REMOVED PRINTINGS ---');
     if (removed.length > 0) {
-        removed.forEach(c => console.log(`- ${c.name} (Set: ${c.set}, Number: ${c.collector_number})`));
+        removed.forEach(c => console.log(`- [${c.set?.toUpperCase()}] ${c.name} (#${c.collector_number}) [ID: ${c.id}]`));
     } else {
-        console.log('None');
+        console.log('None found by ID.');
     }
 
-    console.log('\n--- ADDED CARDS ---');
+    console.log('\n--- EXACT ADDED PRINTINGS ---');
     if (added.length > 0) {
-        added.forEach(c => console.log(`+ ${c.name} (Set: ${c.set}, Number: ${c.collector_number})`));
+        added.forEach(c => console.log(`+ [${c.set?.toUpperCase()}] ${c.name} (#${c.collector_number}) [ID: ${c.id}]`));
     } else {
-        console.log('None');
+        console.log('None found by ID.');
     }
 
 } catch (err) {
-    console.error('\n[FATAL ERROR] An exception occurred during execution:', err.message);
+    console.error('\n[FATAL ERROR]:', err.message);
     process.exit(1);
 }
