@@ -1,8 +1,8 @@
 const fs = require('fs');
 
 // Load both JSON database snapshots
-const file25 = JSON.parse(fs.readFileSync('cards-25.json', 'utf8'));
-const file26 = JSON.parse(fs.readFileSync('cards-26.json', 'utf8'));
+const file25 = JSON.parse(fs.readFileSync('heritage_cards_25.json', 'utf8'));
+const file26 = JSON.parse(fs.readFileSync('heritage_cards_26.json', 'utf8'));
 
 // Map card names into Sets for fast lookups
 const set25 = new Map(file25.map(card => [card.name, card]));
