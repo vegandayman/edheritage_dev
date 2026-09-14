@@ -1,29 +1,30 @@
 const fs = require('fs');
 
 try {
-    console.log('Scanning workspace directory for files...');
-    const files = fs.readdirSync('.');
-    console.log('Available files:', files);
-
     const file25Path = 'heritage_cards_25.json';
     const file26Path = 'heritage_cards_26.json';
 
-    // Verify files exist before attempting to read
     if (!fs.existsSync(file25Path) || !fs.existsSync(file26Path)) {
-        console.error(`\n[ERROR] Missing database snapshot files. Expected '${file25Path}' and '${file26Path}' in the repository root.`);
+        console.error(`[ERROR] Missing files: '${file25Path}' or '${file26Path}'.`);
         process.exit(1);
     }
 
-    console.log(`\nLoading ${file25Path}...`);
-    const file25 = JSON.parse(fs.readFileSync(file25Path, 'utf8'));
+    let raw25 = JSON.parse(fs.readFileSync(file25Path, 'utf8'));
+    let raw26 = JSON.parse(fs.readFileSync(file26Path, 'utf8'));
 
-    console.log(`Loading ${file26Path}...`);
-    const file26 = JSON.parse(fs.readFileSync(file26Path, 'utf8'));
+    // Extract array whether the file is a direct array or a Scryfall list object
+    const array25 = Array.isArray(raw25) ? raw25 : (raw25.data && Array.isArray(raw25.data) ? raw25.data : null);
+    const array26 = Array.isArray(raw26) ? raw26 : (raw26.data && Array.isArray(raw26.data) ? raw26.data : null);
 
-    console.log(`Comparing datasets (${file25.length} cards vs ${file26.length} cards)...\n`);
+    if (!array25 || !array26) {
+        console.error('[FATAL ERROR] JSON structure is neither a direct array nor a recognized Scryfall list object.');
+        process.exit(1);
+    }
 
-    const set25 = new Map(file25.map(card => [card.name, card]));
-    const set26 = new Map(file26.map(card => [card.name, card]));
+    console.log(`Comparing datasets (${array25.length} cards vs ${array26.length} cards)...\n`);
+
+    const set25 = new Map(array25.map(card => [card.name, card]));
+    const set26 = new Map(array26.map(card => [card.name, card]));
 
     const removed = [];
     for (const [name, card] of set25) {
