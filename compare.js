@@ -12,12 +12,27 @@ try {
     let raw25 = JSON.parse(fs.readFileSync(file25Path, 'utf8'));
     let raw26 = JSON.parse(fs.readFileSync(file26Path, 'utf8'));
 
-    // Extract array whether the file is a direct array or a Scryfall list object
-    const array25 = Array.isArray(raw25) ? raw25 : (raw25.data && Array.isArray(raw25.data) ? raw25.data : null);
-    const array26 = Array.isArray(raw26) ? raw26 : (raw26.data && Array.isArray(raw26.data) ? raw26.data : null);
+    // Helper to resolve array from various JSON structures
+    function extractArray(data, filename) {
+        if (Array.isArray(data)) return data;
+        if (data && typeof data === 'object') {
+            // Check common wrapper keys
+            for (const key of ['data', 'cards', 'results', 'items']) {
+                if (Array.isArray(data[key])) return data[key];
+            }
+            // If it's an object containing arrays, find the first array property
+            for (const key of Object.keys(data)) {
+                if (Array.isArray(data[key])) return data[key];
+            }
+        }
+        console.error(`[ERROR] Could not extract a card array from ${filename}. Root type: ${typeof data}`);
+        return null;
+    }
+
+    const array25 = extractArray(raw25, file25Path);
+    const array26 = extractArray(raw26, file26Path);
 
     if (!array25 || !array26) {
-        console.error('[FATAL ERROR] JSON structure is neither a direct array nor a recognized Scryfall list object.');
         process.exit(1);
     }
 
